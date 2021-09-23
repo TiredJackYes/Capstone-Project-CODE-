@@ -1,0 +1,39 @@
+library(tm)
+library(caret)
+library(rpart)
+library(shiny)
+library(caret)
+library(readtext)
+library(stringi)
+library(dplyr)
+library(tokenizers)
+library(stopwords)
+library(sbo)
+library(rsconnect)
+
+blog <- readLines("en_US.blogs.txt")
+news <- readLines("en_US.news.txt")
+twitter <- readLines("en_US.twitter.txt")
+blog <- stri_trans_tolower(blog)
+news <- stri_trans_tolower(news)
+twitter <- stri_trans_tolower(twitter)
+blog <- sample(blog, 899)
+news <- sample(news, 1010)
+twitter <- sample(twitter, 2360)
+data <- rbind(c(blog, news, twitter))
+write.table(data, "MergedData.txt")
+
+df<- readLines("MergedData.txt")
+tdf <- tokenize_words(df, stopwords = "en")
+df <- as.character(tdf)
+df <- gsub('[[:punct:] ]+',' ', df)
+PRED <- sbo_predictor(object = df, 
+                      N = 3, 
+                      dict = target ~ 0.75, 
+                      .preprocess = sbo::preprocess,
+                      EOS = ".?!:;", 
+                      lambda = 0.4, 
+                      L = 3L, 
+                      filtered = "<UNK>" 
+)
+predict(PRED, "No thank you, we don't want any more visitor, well-wishers or distant relations. And what about very old")
